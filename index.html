@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELOS | Conversor Markdown → DOCX</title>
+
+<!-- Bibliotecas -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<style>
+/* ---------- RESET E BASE ---------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #ECECEC 0%, #E8E4F0 100%);
+  color: #222;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- CABEÇALHO ---------- */
+.header {
+  background: linear-gradient(135deg, #6C63FF 0%, #8B78FF 100%);
+  color: white;
+  text-align: center;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.header p {
+  opacity: 0.95;
+  font-size: 14px;
+}
+
+/* ---------- CONTEÚDO PRINCIPAL ---------- */
+.main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---------- SEÇÕES ---------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- EDITOR ---------- */
+textarea {
+  width: 100%;
+  min-height: 200px;
+  max-height: 400px;
+  padding: 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  background: #FAFAFA;
+  transition: border-color 0.3s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #6C63FF;
+  background: #fff;
+}
+
+textarea::placeholder {
+  color: #9CA3AF;
+}
+
+/* ---------- PREVIEW ---------- */
+.preview-container {
+  min-height: 200px;
+  max-height: 500px;
+  padding: 20px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #9CA3AF;
+  padding: 40px 20px;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* ---------- ESTILOS DO PREVIEW ---------- */
+.preview-container h1,
+.preview-container h2,
+.preview-container h3,
+.preview-container h4 {
+  color: #1F1F1F;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.preview-container h1 {
+  font-size: 24px;
+  border-bottom: 3px solid #6C63FF;
+  padding-bottom: 6px;
+  margin-top: 0;
+}
+
+.preview-container h2 {
+  font-size: 20px;
+  border-bottom: 2px solid #E5E7EB;
+  padding-bottom: 4px;
+}
+
+.preview-container h3 {
+  font-size: 18px;
+}
+
+.preview-container h4 {
+  font-size: 16px;
+}
+
+.preview-container p {
+  margin: 10px 0;
+  text-align: justify;
+}
+
+.preview-container ul,
+.preview-container ol {
+  margin: 12px 0 12px 24px;
+  padding-left: 8px;
+}
+
+.preview-container li {
+  margin: 6px 0;
+}
+
+.preview-container strong {
+  font-weight: 700;
+  color: #111827;
+}
+
+.preview-container em {
+  font-style: italic;
+  color: #374151;
+}
+
+.preview-container code {
+  background: #F3F4F6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  color: #DC2626;
+  border: 1px solid #E5E7EB;
+}
+
+.preview-container pre {
+  background: #1F2937;
+  color: #F9FAFB;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.preview-container pre code {
+  background: transparent;
+  color: #F9FAFB;
+  padding: 0;
+  border: none;
+}
+
+.preview-container table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.preview-container th,
+.preview-container td {
+  border: 1px solid #E5E7EB;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.preview-container th {
+  background: #6C63FF;
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.preview-container tr:nth-child(even) {
+  background: #F9FAFB;
+}
+
+.preview-container tr:hover {
+  background: #F3F4F6;
+}
+
+.preview-container blockquote {
+  border-left: 4px solid #6C63FF;
+  padding: 12px 16px;
+  color: #4B5563;
+  font-style: italic;
+  background: #F9F9FF;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Bloco conceitual no preview */
+.preview-container .bloco-conceitual {
+  margin: 24px 0;
+  padding: 20px;
+  background: #F0F9FF;
+  border-left: 4px solid #3B82F6;
+  border-radius: 0 8px 8px 0;
+}
+
+.preview-container hr {
+  border: none;
+  border-top: 2px solid #E5E7EB;
+  margin: 20px 0;
+}
+
+/* Separador semântico (invisível no preview) */
+.preview-container .separator-semantico {
+  height: 24px;
+  border: none;
+  background: transparent;
+}
+
+.preview-container a {
+  color: #6C63FF;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.preview-container a:hover {
+  border-bottom-color: #6C63FF;
+}
+
+.preview-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 12px 0;
+}
+
+/* ---------- BOTÕES ---------- */
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6C63FF 0%, #8B78FF 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 99, 255, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #F3F4F6;
+  color: #374151;
+  border: 2px solid #E5E7EB;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #E5E7EB;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ---------- ALERTAS ---------- */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  display: none;
+  animation: slideIn 0.3s ease;
+  font-weight: 500;
+  margin-top: 12px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-success {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 2px solid #6EE7B7;
+}
+
+.alert-info {
+  background: #DBEAFE;
+  color: #1E40AF;
+  border: 2px solid #93C5FD;
+}
+
+.alert-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 2px solid #FCD34D;
+}
+
+/* ---------- RODAPÉ ---------- */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: #6B7280;
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+}
+
+/* ---------- LOADING ---------- */
+.loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- SCROLLBAR ---------- */
+.preview-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-container::-webkit-scrollbar-track {
+  background: #F3F4F6;
+  border-radius: 4px;
+}
+
+.preview-container::-webkit-scrollbar-thumb {
+  background: #6C63FF;
+  border-radius: 4px;
+}
+
+.preview-container::-webkit-scrollbar-thumb:hover {
+  background: #5B54D9;
+}
+
+/* ---------- RESPONSIVO ---------- */
+@media (min-width: 768px) {
+  .header {
+    padding: 30px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+  }
+
+  .header p {
+    font-size: 15px;
+  }
+
+  .main {
+    padding: 30px;
+  }
+
+  textarea {
+    min-height: 250px;
+  }
+
+  .preview-container {
+    min-height: 250px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🧩 ELOS | Conversor Markdown</h1>
+    <p>Transforme Markdown em documentos Word profissionais</p>
+  </div>
+
+  <div class="main">
+    <!-- SEÇÃO: EDITOR -->
+    <div class="section">
+      <div class="section-title">✏️ Cole ou escreva seu Markdown</div>
+      <textarea id="input" placeholder="# Título Principal
+
+## Subtítulo
+
+Este é um parágrafo comum com **texto em negrito** e *texto em itálico*.
+
+:::bloco
+Este é um bloco conceitual — uma mudança importante de ideia que merece destaque visual e espaçamento ampliado no documento final.
+:::
+
+Voltamos ao parágrafo comum. O texto flui normalmente.
+
+---separator
+
+Este parágrafo vem após um separador semântico invisível, criando respiro adicional sem linha visível.
+
+### Lista de itens
+
+- Item 1
+- Item 2
+  - Subitem 2.1
+  - Subitem 2.2
+- Item 3
+
+### Lista numerada
+
+1. Primeiro passo
+2. Segundo passo
+3. Terceiro passo
+
+### Tabela
+
+| Coluna A | Coluna B | Coluna C |
+|----------|----------|----------|
+| Dado 1   | Dado 2   | Dado 3   |
+| Dado 4   | Dado 5   | Dado 6   |
+
+> Esta é uma citação em destaque.
+
+Confira mais em [nosso site](https://example.com).
+
+---
+
+**Pronto!** Agora clique em *Converter* para visualizar."></textarea>
+
+      <div class="button-group">
+        <button class="btn-secondary" onclick="clearInput()">🧹 Limpar</button>
+        <button class="btn-primary" onclick="convertMarkdown()">⚙️ Converter</button>
+      </div>
+
+      <div id="alertInput" class="alert"></div>
+    </div>
+
+    <!-- SEÇÃO: PREVIEW -->
+    <div class="section">
+      <div class="section-title">📄 Visualização</div>
+      <div id="preview" class="preview-container">
+        <div class="empty-state">
+          ☝️ Cole seu Markdown acima e clique em "Converter"
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-success" onclick="copyFormatted()" id="copyBtn" disabled>
+          📋 Copiar p/ Google Docs
+        </button>
+        <button class="btn-primary" onclick="downloadDocx()" id="downloadBtn" disabled>
+          💾 Baixar DOCX
+        </button>
+      </div>
+
+      <div id="alertOutput" class="alert"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong>ELOS</strong> — Conversor otimizado para mobile © 2025
+  </div>
+</div>
+
+<script>
+const input = document.getElementById("input");
+const preview = document.getElementById("preview");
+const copyBtn = document.getElementById("copyBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+
+// Configurar Marked
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  headerIds: false
+});
+
+// Carregar conteúdo inicial
+window.addEventListener("load", () => {
+  if (input.value.trim()) {
+    convertMarkdown();
+  }
+});
+
+// Preprocessar Markdown para reconhecer sintaxes customizadas
+function preprocessMarkdown(markdown) {
+  // Converter blocos conceituais :::bloco ... :::
+  markdown = markdown.replace(/:::bloco\s*\n([\s\S]*?)\n:::/g, (match, content) => {
+    return `<div class="bloco-conceitual">\n\n${content.trim()}\n\n</div>`;
+  });
+
+  // Converter separadores semânticos ---separator
+  markdown = markdown.replace(/^---separator$/gm, '<div class="separator-semantico"></div>');
+
+  return markdown;
+}
+
+// Converter Markdown
+function convertMarkdown() {
+  const markdown = input.value;
+
+  if (!markdown.trim()) {
+    preview.innerHTML = '<div class="empty-state">☝️ Cole seu Markdown acima e clique em "Converter"</div>';
+    copyBtn.disabled = true;
+    downloadBtn.disabled = true;
+    hideAlert('alertInput');
+    return;
+  }
+
+  try {
+    const preprocessed = preprocessMarkdown(markdown);
+    const html = marked.parse(preprocessed);
+    preview.innerHTML = html;
+    copyBtn.disabled = false;
+    downloadBtn.disabled = false;
+    showAlert('alertInput', '✅ Convertido com sucesso!', 'success');
+  } catch (error) {
+    preview.innerHTML = '<div class="empty-state" style="color: #DC2626;">❌ Erro ao converter. Verifique a sintaxe.</div>';
+    copyBtn.disabled = true;
+    downloadBtn.disabled = true;
+    showAlert('alertInput', '⚠️ Erro na conversão. Verifique o Markdown.', 'warning');
+  }
+}
+
+// Limpar conteúdo
+function clearInput() {
+  if (input.value.trim() && !confirm('Tem certeza que deseja limpar todo o conteúdo?')) {
+    return;
+  }
+
+  input.value = "";
+  preview.innerHTML = '<div class="empty-state">☝️ Cole seu Markdown acima e clique em "Converter"</div>';
+  copyBtn.disabled = true;
+  downloadBtn.disabled = true;
+  hideAlert('alertInput');
+  hideAlert('alertOutput');
+  showAlert('alertInput', 'ℹ️ Conteúdo limpo!', 'info');
+}
+
+// Copiar formatado para Google Docs
+function copyFormatted() {
+  if (!preview.innerHTML.trim() || preview.querySelector('.empty-state')) {
+    showAlert('alertOutput', '⚠️ Não há conteúdo para copiar!', 'warning');
+    return;
+  }
+
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = preview.innerHTML;
+
+  // Aplicar estilos inline nas tabelas
+  const tables = tempDiv.querySelectorAll('table');
+  tables.forEach(table => {
+    const ths = table.querySelectorAll('th');
+    ths.forEach(th => {
+      th.style.backgroundColor = '#6C63FF';
+      th.style.color = 'white';
+      th.style.fontWeight = 'bold';
+      th.style.padding = '10px 12px';
+      th.style.border = '1px solid #E5E7EB';
+    });
+
+    const tds = table.querySelectorAll('td');
+    tds.forEach(td => {
+      td.style.padding = '10px 12px';
+      td.style.border = '1px solid #E5E7EB';
+    });
+
+    const rows = table.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+      if (index % 2 === 1) {
+        row.style.backgroundColor = '#F9FAFB';
+      }
+    });
+  });
+
+  // Aplicar estilos inline nos blockquotes
+  const blockquotes = tempDiv.querySelectorAll('blockquote');
+  blockquotes.forEach(bq => {
+    bq.style.borderLeft = '4px solid #6C63FF';
+    bq.style.paddingLeft = '16px';
+    bq.style.backgroundColor = '#F9F9FF';
+    bq.style.fontStyle = 'italic';
+    bq.style.color = '#4B5563';
+  });
+
+  // Aplicar estilos nos blocos conceituais
+  const blocos = tempDiv.querySelectorAll('.bloco-conceitual');
+  blocos.forEach(bloco => {
+    bloco.style.marginTop = '24px';
+    bloco.style.marginBottom = '24px';
+    bloco.style.padding = '20px';
+    bloco.style.backgroundColor = '#F0F9FF';
+    bloco.style.borderLeft = '4px solid #3B82F6';
+  });
+
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.left = '-9999px';
+  document.body.appendChild(tempDiv);
+
+  const range = document.createRange();
+  range.selectNodeContents(tempDiv);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      showAlert('alertOutput', '✅ Copiado! Cole no Google Docs com Ctrl+V', 'success');
+    } else {
+      showAlert('alertOutput', '⚠️ Não foi possível copiar automaticamente.', 'warning');
+    }
+  } catch (err) {
+    showAlert('alertOutput', '❌ Erro ao copiar.', 'warning');
+  }
+
+  selection.removeAllRanges();
+  document.body.removeChild(tempDiv);
+}
+
+// Download DOCX usando docx.js
+async function downloadDocx() {
+  if (!preview.innerHTML.trim() || preview.querySelector('.empty-state')) {
+    showAlert('alertOutput', '⚠️ Não há conteúdo para exportar!', 'warning');
+    return;
+  }
+
+  downloadBtn.disabled = true;
+  downloadBtn.innerHTML = '<span class="loading"></span> Gerando...';
+
+  try {
+    const content = parseContentForDocx();
+
+    // Criar documento com configurações de numeração
+    const doc = new docx.Document({
+      numbering: {
+        config: [
+          {
+            reference: "numbered-list",
+            levels: [
+              {
+                level: 0,
+                format: docx.LevelFormat.DECIMAL,
+                text: "%1.",
+                alignment: docx.AlignmentType.LEFT,
+                style: {
+                  paragraph: {
+                    indent: { left: 720, hanging: 360 }
+                  }
+                }
+              },
+              {
+                level: 1,
+                format: docx.LevelFormat.LOWER_LETTER,
+                text: "%2.",
+                alignment: docx.AlignmentType.LEFT,
+                style: {
+                  paragraph: {
+                    indent: { left: 1440, hanging: 360 }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: 1134,
+              right: 1134,
+              bottom: 1134,
+              left: 1134
+            }
+          }
+        },
+        children: content
+      }]
+    });
+
+    const blob = await docx.Packer.toBlob(doc);
+    const timestamp = new Date().toISOString().slice(0,10);
+    saveAs(blob, `Documento_ELOS_${timestamp}.docx`);
+
+    showAlert('alertOutput', '✅ Documento baixado com sucesso!', 'success');
+  } catch (error) {
+    showAlert('alertOutput', '❌ Erro ao gerar documento.', 'warning');
+    console.error('Erro:', error);
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.innerHTML = '💾 Baixar DOCX';
+  }
+}
+
+// Parsear HTML para estrutura DOCX com estilos semânticos
+function parseContentForDocx() {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = preview.innerHTML;
+  const children = Array.from(tempDiv.children);
+  const docContent = [];
+
+  children.forEach(element => {
+    const parsed = parseElement(element);
+    if (parsed) {
+      if (Array.isArray(parsed)) {
+        docContent.push(...parsed);
+      } else {
+        docContent.push(parsed);
+      }
+    }
+  });
+
+  return docContent;
+}
+
+// Parsear elemento recursivamente
+function parseElement(element, level = 0) {
+  const tagName = element.tagName.toLowerCase();
+
+  if (tagName === 'h1') {
+    return new docx.Paragraph({
+      text: element.textContent,
+      heading: docx.HeadingLevel.HEADING_1,
+      spacing: { before: 480, after: 360 }
+    });
+  }
+
+  if (tagName === 'h2') {
+    return new docx.Paragraph({
+      text: element.textContent,
+      heading: docx.HeadingLevel.HEADING_2,
+      spacing: { before: 400, after: 300 }
+    });
+  }
+
+  if (tagName === 'h3') {
+    return new docx.Paragraph({
+      text: element.textContent,
+      heading: docx.HeadingLevel.HEADING_3,
+      spacing: { before: 320, after: 240 }
+    });
+  }
+
+  if (tagName === 'h4') {
+    return new docx.Paragraph({
+      text: element.textContent,
+      heading: docx.HeadingLevel.HEADING_4,
+      spacing: { before: 280, after: 200 }
+    });
+  }
+
+  if (tagName === 'div' && element.classList.contains('bloco-conceitual')) {
+    const blocoChildren = Array.from(element.children);
+    const blocoParagraphs = [];
+
+    blocoChildren.forEach(child => {
+      if (child.tagName.toLowerCase() === 'p') {
+        const textRuns = parseInlineFormatting(child);
+        blocoParagraphs.push(
+          new docx.Paragraph({
+            children: textRuns,
+            alignment: docx.AlignmentType.JUSTIFIED,
+            spacing: { before: 480, after: 480 },
+            indent: { left: 360 },
+            border: {
+              left: {
+                color: "3B82F6",
+                space: 1,
+                value: "single",
+                size: 24
+              }
+            },
+            shading: {
+              fill: "F0F9FF"
+            }
+          })
+        );
+      }
+    });
+
+    return blocoParagraphs;
+  }
+
+  if (tagName === 'div' && element.classList.contains('separator-semantico')) {
+    return new docx.Paragraph({
+      text: "",
+      spacing: { before: 480, after: 0 }
+    });
+  }
+
+  if (tagName === 'p') {
+    const textRuns = parseInlineFormatting(element);
+    return new docx.Paragraph({
+      children: textRuns,
+      alignment: docx.AlignmentType.JUSTIFIED,
+      spacing: { before: 240, after: 240 }
+    });
+  }
+
+  if (tagName === 'ul') {
+    return parseList(element, 'bullet', level);
+  }
+
+  if (tagName === 'ol') {
+    return parseList(element, 'numbered', level);
+  }
+
+  if (tagName === 'blockquote') {
+    const textRuns = parseInlineFormatting(element);
+    return new docx.Paragraph({
+      children: textRuns,
+      italics: true,
+      indent: { left: 720 },
+      border: {
+        left: {
+          color: "6C63FF",
+          space: 1,
+          value: "single",
+          size: 24
+        }
+      },
+      shading: {
+        fill: "F9F9FF"
+      },
+      spacing: { before: 320, after: 320 }
+    });
+  }
+
+  if (tagName === 'pre') {
+    const codeElement = element.querySelector('code');
+    const codeText = codeElement ? codeElement.textContent : element.textContent;
+
+    return new docx.Paragraph({
+      children: [
+        new docx.TextRun({
+          text: codeText,
+          font: "Consolas",
+          size: 20
+        })
+      ],
+      shading: {
+        fill: "1F2937"
+      },
+      spacing: { before: 240, after: 240 },
+      indent: { left: 360, right: 360 }
+    });
+  }
+
+  if (tagName === 'hr') {
+    return new docx.Paragraph({
+      border: {
+        bottom: {
+          color: "E5E7EB",
+          space: 1,
+          value: "single",
+          size: 6
+        }
+      },
+      spacing: { before: 360, after: 360 }
+    });
+  }
+
+  if (tagName === 'table') {
+    return createTable(element);
+  }
+
+  return null;
+}
+
+// Parsear listas (com suporte a aninhamento)
+function parseList(listElement, type, level = 0) {
+  const items = [];
+  const directChildren = Array.from(listElement.children).filter(child =>
+    child.tagName.toLowerCase() === 'li'
+  );
+
+  directChildren.forEach(li => {
+    // Extrair texto do <li> sem incluir sublistas
+    const textNode = Array.from(li.childNodes)
+      .filter(node => node.nodeType === Node.TEXT_NODE ||
+                     (node.nodeType === Node.ELEMENT_NODE &&
+                      node.tagName.toLowerCase() !== 'ul' &&
+                      node.tagName.toLowerCase() !== 'ol'))
+      .map(node => node.textContent)
+      .join('')
+      .trim();
+
+    if (textNode) {
+      const textRuns = parseInlineFormattingFromText(li, textNode);
+
+      if (type === 'bullet') {
+        items.push(
+          new docx.Paragraph({
+            children: textRuns,
+            bullet: { level: level },
+            spacing: { before: 120, after: 120 }
+          })
+        );
+      } else {
+        items.push(
+          new docx.Paragraph({
+            children: textRuns,
+            numbering: { reference: "numbered-list", level: level },
+            spacing: { before: 120, after: 120 }
+          })
+        );
+      }
+    }
+
+    // Processar sublistas
+    const sublists = Array.from(li.children).filter(child =>
+      child.tagName.toLowerCase() === 'ul' || child.tagName.toLowerCase() === 'ol'
+    );
+
+    sublists.forEach(sublist => {
+      const sublistType = sublist.tagName.toLowerCase() === 'ul' ? 'bullet' : 'numbered';
+      const subItems = parseList(sublist, sublistType, level + 1);
+      items.push(...subItems);
+    });
+  });
+
+  return items;
+}
+
+// Parsear formatação inline a partir de texto e elemento
+function parseInlineFormattingFromText(element, targetText) {
+  const textRuns = [];
+
+  // Se não tem filhos com formatação, retornar texto simples
+  if (!element.querySelector('strong, em, code, a')) {
+    return [new docx.TextRun(targetText)];
+  }
+
+  // Caso contrário, processar formatação inline
+  return parseInlineFormatting(element);
+}
+
+// Parsear formatação inline
+function parseInlineFormatting(element) {
+  const textRuns = [];
+  const childNodes = Array.from(element.childNodes);
+
+  childNodes.forEach(node => {
+    // Ignorar sublistas
+    if (node.nodeType === Node.ELEMENT_NODE &&
+        (node.tagName.toLowerCase() === 'ul' || node.tagName.toLowerCase() === 'ol')) {
+      return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent.trim()) {
+        textRuns.push(new docx.TextRun(node.textContent));
+      }
+    } else if (node.nodeName === 'STRONG' || node.nodeName === 'B') {
+      textRuns.push(new docx.TextRun({
+        text: node.textContent,
+        bold: true
+      }));
+    } else if (node.nodeName === 'EM' || node.nodeName === 'I') {
+      textRuns.push(new docx.TextRun({
+        text: node.textContent,
+        italics: true
+      }));
+    } else if (node.nodeName === 'CODE') {
+      textRuns.push(new docx.TextRun({
+        text: node.textContent,
+        font: "Consolas",
+        shading: {
+          fill: "F3F4F6"
+        }
+      }));
+    } else if (node.nodeName === 'A') {
+      textRuns.push(new docx.TextRun({
+        text: node.textContent,
+        color: "6C63FF",
+        underline: {}
+      }));
+    } else {
+      textRuns.push(new docx.TextRun(node.textContent));
+    }
+  });
+
+  return textRuns.length > 0 ? textRuns : [new docx.TextRun("")];
+}
+
+// Criar tabela para DOCX
+function createTable(tableElement) {
+  const rows = Array.from(tableElement.querySelectorAll('tr'));
+  const tableRows = [];
+
+  rows.forEach((row, rowIndex) => {
+    const cells = Array.from(row.querySelectorAll('th, td'));
+    const tableCells = cells.map(cell => {
+      const isHeader = cell.tagName.toLowerCase() === 'th';
+      return new docx.TableCell({
+        children: [
+          new docx.Paragraph({
+            text: cell.textContent,
+            alignment: docx.AlignmentType.LEFT
+          })
+        ],
+        shading: isHeader ? {
+          fill: "6C63FF"
+        } : (rowIndex % 2 === 0 ? { fill: "FFFFFF" } : { fill: "F9FAFB" }),
+        borders: {
+          top: { style: docx.BorderStyle.SINGLE, size: 1, color: "E5E7EB" },
+          bottom: { style: docx.BorderStyle.SINGLE, size: 1, color: "E5E7EB" },
+          left: { style: docx.BorderStyle.SINGLE, size: 1, color: "E5E7EB" },
+          right: { style: docx.BorderStyle.SINGLE, size: 1, color: "E5E7EB" }
+        }
+      });
+    });
+
+    tableRows.push(new docx.TableRow({ children: tableCells }));
+  });
+
+  return new docx.Table({
+    rows: tableRows,
+    width: { size: 100, type: docx.WidthType.PERCENTAGE },
+    margins: {
+      top: 240,
+      bottom: 240
+    }
+  });
+}
+
+// Sistema de alertas
+function showAlert(elementId, message, type) {
+  const alert = document.getElementById(elementId);
+  alert.textContent = message;
+  alert.className = `alert alert-${type}`;
+  alert.style.display = 'block';
+
+  setTimeout(() => hideAlert(elementId), 4000);
+}
+
+function hideAlert(elementId) {
+  const alert = document.getElementById(elementId);
+  alert.style.display = 'none';
+}
+
+// Prevenir perda de dados
+window.addEventListener('beforeunload', (e) => {
+  if (input.value.trim()) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+</body>
+</html>
